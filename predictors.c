@@ -10,11 +10,11 @@ unsigned createMask(unsigned start_bit, unsigned end_bit);
 int alwaysTakenPredictor(char* actual);
 int alwaysNotTakenPredictor(char* actual);
 char* alwaysPredictorParser(char* argv[]);
-struct BranchPair** notalwaysPredictorParser(char* argv[]);
+struct BranchPair** notAlwaysPredictorParser(char* argv[]);
 
 int main(int argc, char *argv[])
 {
-char* actual = alwaysPredictorParser(argv);
+/*char* actual = alwaysPredictorParser(argv);
 int result = alwaysTakenPredictor(actual);
 int i = 0;
 printf("Always Taken Result: %d\n", result);
@@ -24,6 +24,12 @@ unsigned long tester = 0x23;
 unsigned test_mask = createMask(0,1);
 tester = tester & test_mask;
 printf("Tester now is: %#x\n", tester);
+*/
+struct BranchPair** tester = notAlwaysPredictorParser(argv);
+for(int i = 0; i < 2; i++)
+{
+  printf("Tester[%d] PC: %#lx\tTaken: %d\n", i, tester[i]->pc, tester[i]->taken);
+}
 return 0;
 }
 
@@ -110,15 +116,31 @@ struct BranchPair** notAlwaysPredictorParser(char*argv[])
 	}
 	char c, *eptr;
 	char temp_address[12];
- 	int address_input = 0, parsed_address = 0, parsed_taken = 0; //"boolean" switches
+ 	int address_input = 0, parsed_address = 0, parsed_taken = 0, end_of_file = 0;; //"boolean" switches
 
 	unsigned long temp_pc; //temp variables
 	int temp_taken;
 
-	int array_iterator = 0;
-	while((c = fgetc(fp)) != EOF)
+	int array_iterator = 0, temp_address_i = 0;
+	while(end_of_file == 0)
 	{
-		if(address_input == 0 && parsed_address == 0)
+    c = fgetc(fp);
+    if(c == EOF)
+    {
+      printf("I made it here.\n");
+			address_input = 0;
+			parsed_address = 0;
+			parsed_taken = 0;
+			ans[array_iterator]-> pc = strtoul(temp_address, &eptr, 16);
+			ans[array_iterator]->taken = temp_taken;
+			for(int i = 0; i < 12; i++)
+        temp_address[i] = ' ';
+      temp_address_i = 0;
+			temp_taken = -1;
+			array_iterator++;
+      end_of_file = 1;
+    }
+		else if(address_input == 0 && parsed_address == 0)
 		{
 			c = fgetc(fp);
 			parsed_address = 1;
@@ -127,11 +149,12 @@ struct BranchPair** notAlwaysPredictorParser(char*argv[])
 		{
 			if(c != ' ')
 			{
-				strcat(temp_address, (char)c);
+				temp_address[temp_address_i] = (char) c;
+        temp_address_i++;
 			}
 			else
 			{
-				temp_pc = stroul(temp_address, &eptr, 16);
+				temp_pc = strtoul(temp_address, &eptr, 16);
 				address_input = 1;
 			}
 		}
@@ -150,15 +173,19 @@ struct BranchPair** notAlwaysPredictorParser(char*argv[])
 		}
 		if(c == '\n')
 		{
+      printf("I made it here.\n");
 			address_input = 0;
 			parsed_address = 0;
 			parsed_taken = 0;
 			ans[array_iterator]-> pc = strtoul(temp_address, &eptr, 16);
 			ans[array_iterator]->taken = temp_taken;
-			temp_address = "";
+			for(int i = 0; i < 12; i++)
+        temp_address[i] = ' ';
+      temp_address_i = 0;
 			temp_taken = -1;
 			array_iterator++;
 		}
+
 	}
 	return ans;
 }
